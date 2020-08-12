@@ -1,36 +1,55 @@
-module Main exposing (..)
+module Main exposing
+    ( Model
+    , Msg(..)
+    , User(..)
+    , emptyModel
+    )
 
 import Browser
 import Html exposing (..)
-import Html.Attributes exposing (href, src, class, style, placeholder, value)
+import Html.Attributes exposing (class, href, placeholder, src, style, value)
 import Html.Events exposing (..)
 import Json.Decode as Json
 
 
+
 ---- MODEL ----
 
-type alias UserInfo = 
+
+type alias UserInfo =
     { name : String
-    , age: Int
+    , age : Maybe Int
     }
 
-type User = 
-    Anonymous
+
+type User
+    = Anonymous
     | Authenticated UserInfo
 
-type AgeCount = 
-    Increment | Decrement
+
+type AgeCount
+    = Increment
+    | Decrement
+
 
 type alias Model =
-    User
+    { user : User
+
+    -- This is the name that will be in the form.
+    , name : String
+    }
+
 
 emptyModel : Model
-emptyModel = 
-   Anonymous
+emptyModel =
+    { user = Anonymous
+    , name = ""
+    }
+
 
 init : ( Model, Cmd Msg )
 init =
-    ( emptyModel , Cmd.none )
+    ( emptyModel, Cmd.none )
 
 
 
@@ -38,12 +57,22 @@ init =
 
 
 type Msg
-    = NoOp
+    = SetName String
+    | SetUser
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    ( model, Cmd.none )
+    case msg of
+        SetName name ->
+            ( { model | name = name }
+            , Cmd.none
+            )
+
+        SetUser ->
+            ( { model | user = Authenticated { name = model.name, age = Nothing } }
+            , Cmd.none
+            )
 
 
 
@@ -58,38 +87,46 @@ view model =
         , viewAge model
         ]
 
-viewName: Model -> Html Msg
-viewName model= 
-    case model of 
-        Anonymous -> 
-            div [] [ text "You are not Logged in, Please Enter your name", br [] [], br [] []
-            , input [ style "margin-left" "12px", class "form-default", placeholder "name" ] [], button [ class "btn btn-success", onInput  ] [ text "Submit"]  ]
-        Authenticated authName ->
-            div [] [ text authName.name]
 
-onEnter msg =
-    let
-        isEnter code =
-            if code == 13 then
-                Json.succeed msg
-            else
-                Json.fail "not ENTER"
-    in
-        on "keydown" (Json.andThen isEnter keyCode)
-
-viewAge: Model -> Html Msg
-viewAge model=
-    case model of 
+viewName : Model -> Html Msg
+viewName model =
+    case model.user of
         Anonymous ->
-            text " "
-
-            
-        Authenticated authAge -> 
-            div []
-                [ button [ ] [ text "-" ]
-                , div [] [ text (String.fromInt authAge.age)]
-                , button [ ] [ text "+" ]
+            Html.form [ onSubmit SetUser ]
+                [ text "You are not Logged in, Please Enter your name"
+                , input
+                    [ style "margin-left" "12px"
+                    , class "form-default"
+                    , placeholder "name"
+                    , onInput <| SetName
+                    ]
+                    []
+                , button [ class "btn btn-success" ] [ text "Submit" ]
                 ]
+
+        Authenticated authName ->
+            div [] [ text authName.name ]
+
+
+viewAge : Model -> Html Msg
+viewAge model =
+    case model.user of
+        Anonymous ->
+            text ""
+
+        Authenticated user ->
+            case user.age of
+                Just age ->
+                    div []
+                        [ button [] [ text "-" ]
+                        , div [] [ text (String.fromInt age) ]
+                        , button [] [ text "+" ]
+                        ]
+
+                Nothing ->
+                    div [] [ text "No age entered" ]
+
+
 
 ---- PROGRAM ----
 
