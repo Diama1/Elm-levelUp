@@ -27,11 +27,6 @@ type User
     | Authenticated UserInfo
 
 
-type AgeCount
-    = Increment
-    | Decrement
-
-
 type alias Model =
     { user : User
 
@@ -46,6 +41,7 @@ emptyModel =
     { user = Anonymous
     , name = ""
     , age = Nothing
+    
     }
 
 
@@ -62,6 +58,9 @@ type Msg
     = SetName String
     | SetAge String
     | SetUser
+    | Increment 
+    | Decrement 
+    
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -80,6 +79,10 @@ update msg model =
             ( { model | age = String.toInt age }
             , Cmd.none
             )
+        Increment -> 
+            ( { model | age = model.age + 1 }, Cmd.none )
+        Decrement -> 
+            ( { model | age = model.age - 1 }, Cmd.none )
 
 
 
@@ -125,9 +128,9 @@ viewAge model =
             case user.age of
                 Just age ->
                     div []
-                        [ button [] [ text "-" ]
+                        [ button [ onClick Decrement] [ text "-" ]
                         , text (String.fromInt age)
-                        , button [] [ text "+" ]
+                        , button [ onClick Increment] [ text "+" ]
                         ]
 
                 Nothing ->
