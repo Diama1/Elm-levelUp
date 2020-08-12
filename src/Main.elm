@@ -7,7 +7,7 @@ module Main exposing
 
 import Browser
 import Html exposing (..)
-import Html.Attributes exposing (class, href, placeholder, src, style, type_, value)
+import Html.Attributes exposing (class, disabled, href, placeholder, src, style, type_, value)
 import Html.Events exposing (..)
 
 
@@ -61,14 +61,24 @@ init =
 ---- UPDATE ----
 
 
+type AgeAction
+    = Decrement
+    | Increment
+
+
 type Msg
     = SetAge String
+    | SetAgeOnUser AgeAction
     | SetName String
     | SetUser
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
+    let
+        noChange =
+            ( model, Cmd.none )
+    in
     case msg of
         SetAge age ->
             let
@@ -81,6 +91,37 @@ update msg model =
             ( { model | userForm = userFormUpdated }
             , Cmd.none
             )
+
+        SetAgeOnUser ageAction ->
+            case model.user of
+                Anonymous ->
+                    noChange
+
+                Authenticated user ->
+                    case user.age of
+                        Nothing ->
+                            noChange
+
+                        Just age ->
+                            let
+                                ageUpdated =
+                                    case ageAction of
+                                        Decrement ->
+                                            if age <= 1 then
+                                                1
+
+                                            else
+                                                age - 1
+
+                                        Increment ->
+                                            age + 1
+
+                                userUpdated =
+                                    { user | age = Just ageUpdated }
+                            in
+                            ( { model | user = Authenticated userUpdated }
+                            , Cmd.none
+                            )
 
         SetName name ->
             let
@@ -112,7 +153,8 @@ update msg model =
                         { name = userForm.name
                         , age = String.toInt userForm.age
                         }
-                , userForm = emptyUserForm
+
+                -- , userForm = emptyUserForm
               }
             , Cmd.none
             )
@@ -127,8 +169,7 @@ view model =
     div []
         [ h1 [] [ text "User Checks" ]
         , viewName model
-
-        -- , viewAge model
+        , viewAge model
         , pre []
             [ h2 [] [ text "User" ]
             , div [] [ text <| Debug.toString model.user ]
@@ -159,34 +200,44 @@ viewName model =
             div [] [ text authName.name ]
 
 
+viewAge : Model -> Html Msg
+viewAge model =
+    case model.user of
+        Anonymous ->
+            text ""
 
---viewAge : Model -> Html Msg
---viewAge model =
---    case model.user of
---        Anonymous ->
---            text ""
---
---        Authenticated user ->
---            case user.age of
---                Just age ->
---                    div []
---                        [ button [] [ text "-" ]
---                        , text (String.fromInt age)
---                        , button [] [ text "+" ]
---                        ]
---
---                Nothing ->
---                    Html.form [ onSubmit SetUser ]
---                        [ text "Please Enter yout age"
---                        , input
---                            [ style "margin-left" "12px"
---                            , class "form-default"
---                            , placeholder "Add Age"
---                            , onInput SetAge
---                            ]
---                            []
---                        , button [ class "btn btn-success" ] [ text "Submit" ]
---                        ]
+        Authenticated user ->
+            case user.age of
+                Just age ->
+                    let
+                        isDisabled =
+                            age <= 1
+                    in
+                    div []
+                        [ button
+                            [ onClick (SetAgeOnUser Decrement)
+                            , disabled isDisabled
+                            ]
+                            [ text "-" ]
+                        , text (String.fromInt age)
+                        , button [ onClick (SetAgeOnUser Increment) ] [ text "+" ]
+                        ]
+
+                Nothing ->
+                    Html.form [ onSubmit SetUser ]
+                        [ text "Please Enter your age"
+                        , input
+                            [ style "margin-left" "12px"
+                            , class "form-default"
+                            , placeholder "Add Age"
+                            , onInput SetAge
+                            ]
+                            []
+                        , button [ class "btn btn-success" ] [ text "Submit" ]
+                        ]
+
+
+
 ---- PROGRAM ----
 
 
