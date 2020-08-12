@@ -34,17 +34,17 @@ type AgeCount
 
 type alias Model =
     { user : User
-    , userform : userForm
+    , userForm : UserForm
 
     
     }
 
-type alias userForm =
+type alias UserForm =
     { name : String
     , age : String
     }
 
-emptyForm : userForm
+emptyForm : UserForm
 emptyForm = 
     { name = " "
     , age = " "
@@ -76,16 +76,27 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         SetName name ->
-            ( { model | name = name }
+            let 
+                userForm =
+                    model.userForm
+                
+                userFormUpdate = 
+                    { userForm | name = name }
+            in
+            ( { model | userForm = userFormUpdate }
             , Cmd.none
             )
 
         SetUser ->
-            ( { model | user = Authenticated { name = model.name, age = model.age } }
+            let
+                userForm =
+                    model.userForm
+            in
+            ( { model | user = Authenticated { name = userForm.name, age = String.toInt userForm.age } }
             , Cmd.none
             )
         SetAge age ->
-            ( { model | age = String.toInt age }
+            ( model
             , Cmd.none
             )
 
@@ -100,6 +111,12 @@ view model =
         [ h1 [] [ text "User Checks" ]
         , viewName model
         , viewAge model
+        , pre []
+            [ h2 [] [ text "User" ]
+            , div [] [ text <| Debug.toString model.user ]
+            , h2 [] [ text "Form" ]
+            , div [] [ text <| Debug.toString model.userForm ]
+            ]
         ]
 
 
