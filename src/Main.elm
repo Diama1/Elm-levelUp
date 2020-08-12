@@ -75,6 +75,17 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+
+        SetAge age ->
+            let 
+                userForm = 
+                    model.userForm
+
+                ageInputUpdated =
+                    { userForm | age = age}
+            in
+            ({ model | userForm = ageInputUpdated }, Cmd.none)
+
         SetName name ->
             let 
                 userForm =
@@ -95,10 +106,7 @@ update msg model =
             ( { model | user = Authenticated { name = userForm.name, age = String.toInt userForm.age } }
             , Cmd.none
             )
-        SetAge age ->
-            ( model
-            , Cmd.none
-            )
+        
 
 
 
@@ -113,9 +121,9 @@ view model =
         , viewAge model
         , pre []
             [ h2 [] [ text "User" ]
-            , div [] [ text <| Debug.toString model.user ]
-            , h2 [] [ text "Form" ]
-            , div [] [ text <| Debug.toString model.userForm ]
+            , div [] [ text (Debug.toString model.user )]
+            , h2 [] [ text "UserForm" ]
+            , div [] [ text (Debug.toString model.userForm) ]
             ]
         ]
 
