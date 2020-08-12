@@ -7,9 +7,8 @@ module Main exposing
 
 import Browser
 import Html exposing (..)
-import Html.Attributes exposing (class, href, placeholder, src, style, value)
+import Html.Attributes exposing (class, disabled, href, placeholder, src, style, type_, value)
 import Html.Events exposing (..)
-import Json.Decode as Json
 
 
 
@@ -27,25 +26,29 @@ type User
     | Authenticated UserInfo
 
 
-type AgeCount
-    = Increment
-    | Decrement
-
-
 type alias Model =
     { user : User
+    , userForm : UserForm
+    }
 
-    -- This is the name that will be in the form.
-    , name : String
-    , age : Maybe Int
+
+type alias UserForm =
+    { name : String
+    , age : String
+    }
+
+
+emptyUserForm : UserForm
+emptyUserForm =
+    { name = ""
+    , age = ""
     }
 
 
 emptyModel : Model
 emptyModel =
     { user = Anonymous
-    , name = ""
-    , age = Nothing
+    , userForm = emptyUserForm
     }
 
 
@@ -58,26 +61,101 @@ init =
 ---- UPDATE ----
 
 
+type AgeAction
+    = Decrement
+    | Increment
+
+
 type Msg
-    = SetName String
-    | SetAge String
+    = SetAge String
+    | SetAgeOnUser AgeAction
+    | SetName String
     | SetUser
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
+    let
+        noChange =
+            ( model, Cmd.none )
+    in
     case msg of
+        SetAge age ->
+            let
+                userForm =
+                    model.userForm
+
+                userFormUpdated =
+                    { userForm | age = age }
+            in
+            ( { model | userForm = userFormUpdated }
+            , Cmd.none
+            )
+
+        SetAgeOnUser ageAction ->
+            case model.user of
+                Anonymous ->
+                    noChange
+
+                Authenticated user ->
+                    case user.age of
+                        Nothing ->
+                            noChange
+
+                        Just age ->
+                            let
+                                ageUpdated =
+                                    case ageAction of
+                                        Decrement ->
+                                            if age <= 1 then
+                                                1
+
+                                            else
+                                                age - 1
+
+                                        Increment ->
+                                            age + 1
+
+                                userUpdated =
+                                    { user | age = Just ageUpdated }
+                            in
+                            ( { model | user = Authenticated userUpdated }
+                            , Cmd.none
+                            )
+
         SetName name ->
-            ( { model | name = name }
+            let
+                userForm =
+                    model.userForm
+
+                nameUpdate =
+                    if name == "Amitai" then
+                        "Diane"
+
+                    else
+                        name
+
+                userFormUpdated =
+                    { userForm | name = nameUpdate }
+            in
+            ( { model | userForm = userFormUpdated }
             , Cmd.none
             )
 
         SetUser ->
-            ( { model | user = Authenticated { name = model.name, age = model.age } }
-            , Cmd.none
-            )
-        SetAge age ->
-            ( { model | age = String.toInt age }
+            let
+                userForm =
+                    model.userForm
+            in
+            ( { model
+                | user =
+                    Authenticated
+                        { name = userForm.name
+                        , age = String.toInt userForm.age
+                        }
+
+                -- , userForm = emptyUserForm
+              }
             , Cmd.none
             )
 
@@ -92,6 +170,12 @@ view model =
         [ h1 [] [ text "User Checks" ]
         , viewName model
         , viewAge model
+        , pre []
+            [ h2 [] [ text "User" ]
+            , div [] [ text <| Debug.toString model.user ]
+            , h2 [] [ text "Form" ]
+            , div [] [ text <| Debug.toString model.userForm ]
+            ]
         ]
 
 
@@ -106,6 +190,7 @@ viewName model =
                     , class "form-default"
                     , placeholder "name"
                     , onInput <| SetName
+                    , value model.userForm.name
                     ]
                     []
                 , button [ class "btn btn-success" ] [ text "Submit" ]
@@ -124,15 +209,23 @@ viewAge model =
         Authenticated user ->
             case user.age of
                 Just age ->
+                    let
+                        isDisabled =
+                            age <= 1
+                    in
                     div []
-                        [ button [] [ text "-" ]
+                        [ button
+                            [ onClick (SetAgeOnUser Decrement)
+                            , disabled isDisabled
+                            ]
+                            [ text "-" ]
                         , text (String.fromInt age)
-                        , button [] [ text "+" ]
+                        , button [ onClick (SetAgeOnUser Increment) ] [ text "+" ]
                         ]
 
                 Nothing ->
                     Html.form [ onSubmit SetUser ]
-                        [ text "Please Enter yout age"
+                        [ text "Please Enter your age"
                         , input
                             [ style "margin-left" "12px"
                             , class "form-default"
