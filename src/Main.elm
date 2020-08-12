@@ -37,6 +37,7 @@ type alias Model =
 
     -- This is the name that will be in the form.
     , name : String
+    , age : Maybe Int
     }
 
 
@@ -44,6 +45,7 @@ emptyModel : Model
 emptyModel =
     { user = Anonymous
     , name = ""
+    , age = Nothing
     }
 
 
@@ -58,6 +60,7 @@ init =
 
 type Msg
     = SetName String
+    | SetAge String
     | SetUser
 
 
@@ -70,7 +73,11 @@ update msg model =
             )
 
         SetUser ->
-            ( { model | user = Authenticated { name = model.name, age = Nothing } }
+            ( { model | user = Authenticated { name = model.name, age = model.age } }
+            , Cmd.none
+            )
+        SetAge age ->
+            ( { model | age = String.toInt age }
             , Cmd.none
             )
 
@@ -119,12 +126,22 @@ viewAge model =
                 Just age ->
                     div []
                         [ button [] [ text "-" ]
-                        , div [] [ text (String.fromInt age) ]
+                        , text (String.fromInt age)
                         , button [] [ text "+" ]
                         ]
 
                 Nothing ->
-                    div [] [ text "No age entered" ]
+                    Html.form [ onSubmit SetUser ]
+                        [ text "Please Enter yout age"
+                        , input
+                            [ style "margin-left" "12px"
+                            , class "form-default"
+                            , placeholder "Add Age"
+                            , onInput SetAge
+                            ]
+                            []
+                        , button [ class "btn btn-success" ] [ text "Submit" ]
+                        ]
 
 
 
