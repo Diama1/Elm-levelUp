@@ -7,7 +7,7 @@ module Main exposing
 
 import Browser
 import Html exposing (..)
-import Html.Attributes exposing (class, href, placeholder, src, style, value)
+import Html.Attributes exposing (class, href, placeholder, src, style, value, disabled)
 import Html.Events exposing (..)
 import Json.Decode as Json
 
@@ -70,10 +70,16 @@ type Msg
     = SetName String
     | SetAge String
     | SetUser
+    | SetAgeCount AgeCount
+    | Logout 
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
+    let
+        noChange =
+            (model, Cmd.none)
+    in
     case msg of
 
         SetAge age ->
@@ -93,6 +99,7 @@ update msg model =
                 
                 userFormUpdate = 
                     { userForm | name = name }
+                
             in
             ( { model | userForm = userFormUpdate }
             , Cmd.none
@@ -106,6 +113,38 @@ update msg model =
             ( { model | user = Authenticated { name = userForm.name, age = String.toInt userForm.age } }
             , Cmd.none
             )
+        SetAgeCount ageCount ->
+            case model.user of
+                Anonymous -> 
+                    noChange
+                
+                Authenticated user -> 
+                    case user.age of
+                        Nothing ->
+                            noChange
+
+                        Just age ->
+                            let
+                                newAge =
+                                    case ageCount of
+                                        Increment ->
+                                            age + 1
+                                        Decrement ->
+                                            if age <= 0 then
+                                                0
+                                            else
+                                                age - 1
+                                
+                                userAgeUpdated =
+                                    { user | age = Just newAge }
+
+                            in
+                            ({ model | user = Authenticated userAgeUpdated }, Cmd.none)
+        
+        Logout ->
+            ({ model | user = Anonymous }, Cmd.none)
+
+
         
 
 
@@ -117,14 +156,11 @@ view : Model -> Html Msg
 view model =
     div []
         [ h1 [] [ text "User Checks" ]
+        , div [] [ text (Debug.toString model.user )]
         , viewName model
         , viewAge model
-        , pre []
-            [ h2 [] [ text "User" ]
-            , div [] [ text (Debug.toString model.user )]
-            , h2 [] [ text "UserForm" ]
-            , div [] [ text (Debug.toString model.userForm) ]
-            ]
+        , viewLogout model
+        
         ]
 
 
@@ -147,6 +183,14 @@ viewName model =
         Authenticated authName ->
             div [] [ text authName.name ]
 
+viewLogout : Model -> Html Msg
+viewLogout model =
+    case model.user of
+        Anonymous ->
+            button [  disabled True ] [ text "Logout"]
+
+        Authenticated user -> 
+            button [ onClick Logout ] [ text " Logout "]
 
 viewAge : Model -> Html Msg
 viewAge model =
@@ -157,10 +201,16 @@ viewAge model =
         Authenticated user ->
             case user.age of
                 Just age ->
+                    let 
+                        btnDisable =
+                            age <= 0
+                    in
                     div []
-                        [ button [] [ text "-" ]
+                        [ button [ onClick (SetAgeCount Decrement)
+                        , disabled btnDisable ]
+                        [ text "-" ]
                         , text (String.fromInt age)
-                        , button [] [ text "+" ]
+                        , button [ onClick (SetAgeCount Increment) ] [ text "+" ]
                         ]
 
                 Nothing ->
