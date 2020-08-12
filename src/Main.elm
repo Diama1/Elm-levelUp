@@ -34,18 +34,26 @@ type AgeCount
 
 type alias Model =
     { user : User
+    , userform : userForm
 
-    -- This is the name that will be in the form.
-    , name : String
-    , age : Maybe Int
+    
     }
 
+type alias userForm =
+    { name : String
+    , age : String
+    }
+
+emptyForm : userForm
+emptyForm = 
+    { name = " "
+    , age = " "
+    }
 
 emptyModel : Model
 emptyModel =
     { user = Anonymous
-    , name = ""
-    , age = Nothing
+    , userForm = emptyForm
     }
 
 
